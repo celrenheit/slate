@@ -199,6 +199,7 @@
     <link href="stylesheets/screen.css" rel="stylesheet" media="screen" />
     <link href="stylesheets/print.css" rel="stylesheet" media="print" />
       <script src="javascripts/all.js"></script>
+    <link href="images/favicon.ico" rel="icon" type="image/ico" />
   </head>
 
   <body class="index" data-languages="[&quot;shell&quot;,&quot;go&quot;]">
@@ -240,6 +241,9 @@
                     <a href="#in-the-future" class="toc-h2 toc-link" data-title="In the future">In the future</a>
                   </li>
               </ul>
+          </li>
+          <li>
+            <a href="#consuming" class="toc-h1 toc-link" data-title="Consuming">Consuming</a>
           </li>
       </div>
         <ul class="toc-footer">
@@ -292,11 +296,6 @@ Here is a table describing the required/optional params:</p>
 <td>The name of the topic, must not start with an underscore <code>_</code> and only be composed of alphanumeric characters</td>
 </tr>
 <tr>
-<td>kind</td>
-<td>true</td>
-<td>The topic kind. Default: <strong>Timer</strong></td>
-</tr>
-<tr>
 <td>num partitions</td>
 <td>true</td>
 <td>The number of partitions</td>
@@ -307,16 +306,17 @@ Here is a table describing the required/optional params:</p>
 <td>The number of nodes to replicate each partition to</td>
 </tr>
 <tr>
+<td>kind</td>
+<td>false</td>
+<td>The topic kind. Default: <strong>Timer</strong></td>
+</tr>
+<tr>
 <td>storage driver</td>
 <td>false</td>
 <td>The storage engine to use (RocksDB or Badger). Default: <strong>RocksDB</strong></td>
 </tr>
 </tbody></table>
-<h1 id='producing-a-message'>Producing a message</h1><h2 id='now'>Now</h2>
-<p>When producing a new message to a topic we need to specify to which partition the message should be produced in.</p>
-
-<p>However, an empty partition means choose a random one. This is for convenience and when there is not need to partition in a particular partition.</p>
-<pre class="highlight shell tab-shell"><code>sandctl produce emails <span class="s1">'{"dest" : "hi@example.com"}'</span>
+<h1 id='producing-a-message'>Producing a message</h1><h2 id='now'>Now</h2><pre class="highlight shell tab-shell"><code>sandctl produce emails <span class="s1">'{"dest" : "hi@example.com"}'</span>
 </code></pre><pre class="highlight go tab-go"><code><span class="n">client</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sg</span><span class="o">.</span><span class="n">NewClient</span><span class="p">(</span><span class="x">
     </span><span class="n">sg</span><span class="o">.</span><span class="n">WithAddresses</span><span class="p">(</span><span class="s">":7170"</span><span class="p">),</span><span class="x">
 </span><span class="p">)</span><span class="x">
@@ -330,8 +330,11 @@ Here is a table describing the required/optional params:</p>
 </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
     </span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
 </span><span class="p">}</span><span class="x">
-</span></code></pre><h2 id='in-the-future'>In the future</h2><pre class="highlight shell tab-shell"><code>sandctl produce emails <span class="s1">'{"dest" : "hi@example.com"}'</span>
-</code></pre><pre class="highlight go tab-go"><code><span class="n">client</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sg</span><span class="o">.</span><span class="n">NewClient</span><span class="p">(</span><span class="x">
+</span></code></pre>
+<p>When producing a new message to a topic we need to specify to which partition the message should be produced in.</p>
+
+<p>However, an empty partition means choose a random one. This is for convenience and when there is not need to partition in a particular partition.</p>
+<h2 id='in-the-future'>In the future</h2><pre class="highlight go tab-go"><code><span class="n">client</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sg</span><span class="o">.</span><span class="n">NewClient</span><span class="p">(</span><span class="x">
     </span><span class="n">sg</span><span class="o">.</span><span class="n">WithAddresses</span><span class="p">(</span><span class="s">":7170"</span><span class="p">),</span><span class="x">
 </span><span class="p">)</span><span class="x">
 </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
@@ -352,6 +355,40 @@ Here is a table describing the required/optional params:</p>
     </span><span class="k">return</span><span class="x"> </span><span class="n">err</span><span class="x">
 </span><span class="p">}</span><span class="x">
 </span></code></pre>
+<p>The way to produce a message in future, is by setting a custom <a href="https://github.com/celrenheit/sandflake">sandflake id</a> with the time that you want.</p>
+<h1 id='consuming'>Consuming</h1><pre class="highlight shell tab-shell"><code>sandctl consume emails
+</code></pre><pre class="highlight go tab-go"><code><span class="n">client</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sg</span><span class="o">.</span><span class="n">NewClient</span><span class="p">(</span><span class="x">
+    </span><span class="n">sg</span><span class="o">.</span><span class="n">WithAddresses</span><span class="p">(</span><span class="s">":7170"</span><span class="p">),</span><span class="x">
+</span><span class="p">)</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="nb">panic</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span><span class="k">defer</span><span class="x"> </span><span class="n">client</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span><span class="x">
+
+</span><span class="n">mux</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sg</span><span class="o">.</span><span class="n">NewMux</span><span class="p">()</span><span class="x">
+</span><span class="n">mux</span><span class="o">.</span><span class="n">SubscribeFunc</span><span class="p">(</span><span class="s">"emails"</span><span class="p">,</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">msg</span><span class="x"> </span><span class="o">*</span><span class="n">sgproto</span><span class="o">.</span><span class="n">Message</span><span class="p">)</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="c">// handle message</span><span class="x">
+    </span><span class="n">log</span><span class="o">.</span><span class="n">Printf</span><span class="p">(</span><span class="s">"received: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="x"> </span><span class="kt">string</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">Value</span><span class="p">))</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="no">nil</span><span class="x">
+</span><span class="p">})</span><span class="x">
+
+</span><span class="n">m</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">sg</span><span class="o">.</span><span class="n">MuxManager</span><span class="p">{</span><span class="x">
+    </span><span class="n">Client</span><span class="o">:</span><span class="x">               </span><span class="n">c</span><span class="p">,</span><span class="x">
+    </span><span class="n">Mux</span><span class="o">:</span><span class="x">                  </span><span class="n">mux</span><span class="p">,</span><span class="x">
+    </span><span class="n">ReFetchSleepDuration</span><span class="o">:</span><span class="x"> </span><span class="n">dur</span><span class="p">,</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="n">err</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">m</span><span class="o">.</span><span class="n">Start</span><span class="p">()</span><span class="x">
+</span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">log</span><span class="o">.</span><span class="n">Fatal</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p>In Go, when using Handlers and Subscribe(Func) methods, each message received will launch a new goroutine.</p>
+
+<aside class="notice">
+If the handler returns non-nil error the message will be <code>NACKed</code> and made available for redelivery. Otherwise, the message will be <code>ACK</code>.
+</aside>
+
       </div>
       <div class="dark-box">
           <div class="lang-selector">
