@@ -3,237 +3,117 @@ title: API Reference
 
 language_tabs: # must be one of https://git.io/vQNgJ
   - shell
-  - ruby
-  - python
-  - javascript
+  - go
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
   - <a href='https://github.com/lord/slate'>Documentation Powered by Slate</a>
 
-includes:
-  - errors
+# includes:
+#   - errors
 
 search: true
 ---
 
 # Introduction
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+Welcome to the Sandglass API documentation.
 
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
+# Topics
 
-This example API documentation page was created with [Slate](https://github.com/lord/slate). Feel free to edit it and use it as a base for your own API's documentation.
+## Creating a topic
 
-# Authentication
 
-> To authorize, use this code:
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-```
+> To create a topic:
 
 ```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
+sandctl topics create emails --num_partitions 6 --replication_factor 3
 ```
 
-```javascript
-const kittn = require('kittn');
+```go
+client, err := sg.NewClient(
+    sg.WithAddresses(":7170"),
+)
+if err != nil {
+    return err
+}
 
-let api = kittn.authorize('meowmeowmeow');
+err = client.CreateTopic(context.Background(), &sgproto.CreateTopicParams{
+  Name: "emails",
+  NumPartitions: 6,
+  ReplicationFactor: 3,
+})
+if err != nil {
+    return err
+}
 ```
 
-> Make sure to replace `meowmeowmeow` with your API key.
+> Make sure to replace `:7170` with the address of at least one node in the cluster
 
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
+A topic has a name, a number of partitions and a replication factor.
+Here is a table describing the required/optional params:
 
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
-
-`Authorization: meowmeowmeow`
-
-<aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
-</aside>
-
-# Kittens
-
-## Get All Kittens
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
-
-```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let kittens = api.kittens.get();
-```
-
-> The above command returns JSON structured like this:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
-    "id": 2,
-    "name": "Max",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
-  }
-]
-```
-
-This endpoint retrieves all kittens.
-
-### HTTP Request
-
-`GET http://example.com/api/kittens`
-
-### Query Parameters
-
-Parameter | Default | Description
+Parameter | Required | Description
 --------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
+name | true | The name of the topic, must not start with an underscore `_` and only be composed of alphanumeric characters
+kind | true | The topic kind. Default: **Timer**
+num partitions | true | The number of partitions
+replication factor | true | The number of nodes to replicate each partition to
+storage driver | false | The storage engine to use (RocksDB or Badger). Default: **RocksDB**
 
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
+# Producing a message
 
-## Get a Specific Kitten
+## Now
 
-```ruby
-require 'kittn'
+When producing a new message to a topic we need to specify to which partition the message should be produced in.
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
-```
+However, an empty partition means choose a random one. This is for convenience and when there is not need to partition in a particular partition.
 
 ```shell
-curl "http://example.com/api/kittens/2"
-  -H "Authorization: meowmeowmeow"
+sandctl produce emails '{"dest" : "hi@example.com"}'
 ```
 
-```javascript
-const kittn = require('kittn');
+```go
+client, err := sg.NewClient(
+    sg.WithAddresses(":7170"),
+)
+if err != nil {
+    return err
+}
 
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.get(2);
-```
-
-> The above command returns JSON structured like this:
-
-```json
-{
-  "id": 2,
-  "name": "Max",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
+err = client.Produce(context.Background(), "emails", "", &sgproto.Message{
+    Value: []byte(`{"dest" : "hi@example.com"}`),
+})
+if err != nil {
+    return err
 }
 ```
 
-This endpoint retrieves a specific kitten.
+## In the future
 
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
-
-### HTTP Request
-
-`GET http://example.com/kittens/<ID>`
-
-### URL Parameters
-
-Parameter | Description
---------- | -----------
-ID | The ID of the kitten to retrieve
-
-## Delete a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.delete(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.delete(2)
-```
 
 ```shell
-curl "http://example.com/api/kittens/2"
-  -X DELETE
-  -H "Authorization: meowmeowmeow"
+sandctl produce emails '{"dest" : "hi@example.com"}'
 ```
 
-```javascript
-const kittn = require('kittn');
+```go
+client, err := sg.NewClient(
+    sg.WithAddresses(":7170"),
+)
+if err != nil {
+    return err
+}
 
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.delete(2);
-```
+// Now we produce a new message that will be consumed in one hour
+inOneHour := time.Now().Add(1 * time.Hour)
+gen := sandflake.NewFixedTimeGenerator(inOneHour)
 
-> The above command returns JSON structured like this:
+msg := &sgproto.Message{
+	Offset: gen.Next(),
+	Value:  []byte("Hello"),
+}
 
-```json
-{
-  "id": 2,
-  "deleted" : ":("
+err := client.ProduceMessage(context.Background(), "emails", "", msg)
+if err != nil {
+	return err
 }
 ```
-
-This endpoint deletes a specific kitten.
-
-### HTTP Request
-
-`DELETE http://example.com/kittens/<ID>`
-
-### URL Parameters
-
-Parameter | Description
---------- | -----------
-ID | The ID of the kitten to delete
-
